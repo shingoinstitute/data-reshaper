@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.text.*?>
+
+<GridPane fx:controller="org.shingo.insightdatareshaper.FXMLController" 
+    xmlns:fx="http://javafx.com/fxml" alignment="center" hgap="10" vgap="10" styleClass="login">
+<padding><Insets top="25" right="25" bottom="10" left="25"/></padding>
+    <Text id="welcome-text" text="Data Reshaper" 
+        GridPane.columnIndex="0" GridPane.rowIndex="0"
+        GridPane.columnSpan="2"/>
+ 
+    <VBox xmlns:fx="http://javafx.com/fxml"
+        GridPane.columnIndex="0" GridPane.rowIndex="1">
+        <children>
+            <ListView fx:id="insightorgs" id="insightorgs">
+            </ListView>
+            <Text fx:id="size" />
+        </children>
+    </VBox>
+    
+    <HBox spacing="10" alignment="bottom_right" 
+        GridPane.columnIndex="1" GridPane.rowIndex="4">
+        <Button text="Reshape" 
+        onAction="#handleReshapeButtonAction" />
+        <Button text="Logout"     
+        onAction="#handleLogoutButtonAction"/>
+    </HBox>
+    <HBox spacing="10" alignment="BOTTOM_LEFT"
+       GridPane.columnIndex="1" GridPane.rowIndex="6" fx:id="infobox" >
+        <Text fx:id="actiontarget" />
+    </HBox>
+</GridPane>
