@@ -29,7 +29,7 @@ public class MySQLHelper {
             this.dbname = dbname;
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/", "root", "Shingo");
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/", "root", "YOUR_PASSWORD");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
             stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbname);
@@ -39,7 +39,7 @@ public class MySQLHelper {
             conn.close();
             
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             stmt = conn.createStatement();
@@ -65,7 +65,7 @@ public class MySQLHelper {
         try {
             // TODO: Change login info
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
@@ -89,7 +89,7 @@ public class MySQLHelper {
                 try {
             // TODO: Change login info
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
@@ -128,7 +128,7 @@ public class MySQLHelper {
             values = values.substring(0, values.length() - 2);
    
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
@@ -181,7 +181,7 @@ public class MySQLHelper {
             values = values.substring(0, values.length() - 2);
             
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();

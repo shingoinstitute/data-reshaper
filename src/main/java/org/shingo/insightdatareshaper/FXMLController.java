@@ -45,9 +45,9 @@ public class FXMLController implements Initializable {
     
     Scene scene, mainScene;
     // TODO: Set up Salesforce app info
-    static String ENVIRONMENT = "https://shingoforce.my.salesforce.com/";
-    static String CLIENT_ID = "3MVG9yZ.WNe6byQBbrY_zDLec9u2bivUvickAYtzgmTB1sKXOrAfTubUI9yt.71oVDZNFpsmUTsLuhbTqYVP6";
-    static String CLIENT_SECRET = "4846342501724410652";
+    static String ENVIRONMENT = "YOUR_ENVIRONMENT_URL";
+    static String CLIENT_ID = "YOUR_CLIENT_ID";
+    static String CLIENT_SECRET = "YOUR_CLIENT_SECRET";
     static String ACCESS_TOKEN;
     List insightOrgs = new ArrayList<>();
     List surveys = new ArrayList<>();
