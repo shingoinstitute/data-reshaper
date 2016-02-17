@@ -5,10 +5,12 @@
  */
 package org.shingo.insightdatareshaper;
 
+import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
@@ -27,7 +29,7 @@ public class MySQLHelper {
             this.dbname = dbname;
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/", "root", "MYPASSWORD");
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/", "root", "YOUR_PASSWORD");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
             stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbname);
@@ -37,7 +39,7 @@ public class MySQLHelper {
             conn.close();
             
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "MYPASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             stmt = conn.createStatement();
@@ -65,7 +67,7 @@ public class MySQLHelper {
         try {
             // TODO: Change login info
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "MYPASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
@@ -76,6 +78,64 @@ public class MySQLHelper {
                 stmt.execute(sql);
             }
             
+            stmt.close();
+            conn.commit();
+            conn.setAutoCommit(true);
+            conn.close();
+        } catch (InstantiationException ex) {
+            Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void insertRespondent(JSONObject org) throws SQLException, ClassNotFoundException{
+        try {
+            StringBuilder str = new StringBuilder();
+            StringBuilder val = new StringBuilder();            
+            List<String> filter = Arrays.asList("Id","Insight_Organization__c", "Gender__c", "Age__c", "Years_with_Employer__c", "Years_in_Current_Position__c", "Native_Language__c", "Skill_in_English__c","Level_of_Education__c", "Scope__c", "Role__c","Department_of_Job_Function__c","Position__c");
+            Iterator<?> keys = org.keys();
+            while(keys.hasNext()){
+                String key = (String)keys.next();
+                if(org.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System")) {}
+                else {
+                    if(filter.contains(key)){
+                        str.append(key);
+                        str.append(", ");
+                        val.append("'").append(org.get(key).toString().replace("'", "''")).append("', ");
+                    }
+                }
+            }
+            String columns = str.toString();
+            columns = columns.substring(0, columns.length() - 2);
+            String values = val.toString();
+            values = values.substring(0, values.length() - 2);
+   
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            System.out.println("Connected to database successfully!");
+            conn.setAutoCommit(false);
+            Statement stmt = conn.createStatement();
+            str = new StringBuilder();
+            String[] cols = columns.split(", ");
+            str.append("CREATE TABLE IF NOT EXISTS Respondent (_id MEDIUMINT NOT NULL AUTO_INCREMENT, ");
+            for (String col : cols) {
+                if (filter.contains(col)) {
+                    str.append(col).append(" VARCHAR(767), ");
+                }            
+            }
+            str.append("PRIMARY KEY (_id), UNIQUE (Id));");
+            System.out.println("CREATE TABLE STMT: " + str.toString());
+            stmt.executeUpdate(str.toString());
+            str = new StringBuilder();
+            str.append("INSERT INTO Respondent (").append(columns).append(")")
+                    .append(" VALUES ( ").append(values).append(");");
+            System.out.println("INSERT INTO STMT: " + str.toString());
+            try{
+                stmt.executeUpdate(str.toString());
+            } catch(MySQLIntegrityConstraintViolationException cve){
+                System.out.println("Duplicate Respondent");
+            }
             stmt.close();
             conn.commit();
             conn.setAutoCommit(true);
@@ -107,7 +167,7 @@ public class MySQLHelper {
             values = values.substring(0, values.length() - 2);
             
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();

@@ -4,7 +4,7 @@
 
     <groupId>org.shingo</groupId>
     <artifactId>InsightDataReshaper</artifactId>
-    <version>2.2</version>
+    <version>3.0</version>
     <packaging>jar</packaging>
 
     <name>InsightDataReshaper</name>

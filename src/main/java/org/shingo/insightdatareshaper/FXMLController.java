@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -44,9 +45,9 @@ public class FXMLController implements Initializable {
     
     Scene scene, mainScene;
     // TODO: Set up Salesforce app info
-    static String ENVIRONMENT = "YOURSALESFORCELOGINURL";
-    static String CLIENT_ID = "client_id_yours";
-    static String CLIENT_SECRET = "client_secret_yours";
+    static String ENVIRONMENT = "YOUR_ENVIRONMENT_URL";
+    static String CLIENT_ID = "YOUR_CLIENT_ID";
+    static String CLIENT_SECRET = "YOUR_CLIENT_SECRET";
     static String ACCESS_TOKEN;
     List insightOrgs = new ArrayList<>();
     List surveys = new ArrayList<>();
@@ -94,7 +95,7 @@ public class FXMLController implements Initializable {
             ACCESS_TOKEN = result.getString("access_token");
             if(!ACCESS_TOKEN.equals(""))
             {
-                urlString = ENVIRONMENT + "services/data/v32.0/query?q=SELECT+name+from+Insight_Organization__c";
+                urlString = ENVIRONMENT + "services/data/v32.0/query?q=SELECT+Name,+Status__c+from+Insight_Organization__c+WHERE+Status__c%3D%27Survey%20Complete%2C%20Waiting%20Report%27";
                 url = new URL(urlString);
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
@@ -244,7 +245,7 @@ public class FXMLController implements Initializable {
     private void reshapeData(List surveys){
         try {
             List<ResponseSet> responseSet = new ArrayList<>();
-            db = new MySQLHelper(selectedOrg.getId());
+            db = new MySQLHelper("Insight_Organization");
             String orgurlstring = ENVIRONMENT + selectedOrg.getUrl().substring(1);
             URL orgurl = null;
             try {
@@ -294,10 +295,13 @@ public class FXMLController implements Initializable {
 
                     System.out.println("reshapeData[" + i +"]: " + responseStrBuilder.toString());
                     JSONObject result = new JSONObject(responseStrBuilder.toString());
+                    db.insertRespondent(result);
                     Iterator<?> keys = result.keys();
+                    List<String> filter = Arrays.asList("LastModifiedById","IsDeleted","Id","CreatedById", "Insight_Organization__c", "Gender__c", "Age__c", "Years_with_Employer__c", "Years_in_Current_Position__c", "Native_Language__c", "Skill_in_English__c","Level_of_Education__c", "Scope__c", "Role__c","Department_of_Job_Function__c","Position__c");
+                    responseSet.clear();
                     while(keys.hasNext()){
                         String key = (String)keys.next();
-                        if(result.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System")) {}
+                        if(result.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System") || filter.contains(key)) {}
                         else {
                             responseSet.add(new ResponseSet(key,result.get(key).toString(),surveyId,selectedOrg.getId()));
                         }
@@ -310,9 +314,7 @@ public class FXMLController implements Initializable {
                     Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-        } catch (SQLException ex) {
-            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ClassNotFoundException ex) {
+        } catch (SQLException | ClassNotFoundException ex) {
             Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -320,9 +322,7 @@ public class FXMLController implements Initializable {
     private void insertResponseSet(List<ResponseSet> data){
         try {            
             db.insertAll(data);
-        } catch (SQLException ex) {
-            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ClassNotFoundException ex) {
+        } catch (SQLException | ClassNotFoundException ex) {
             Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
