@@ -29,7 +29,7 @@ public class MySQLHelper {
             this.dbname = dbname;
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/", "root", "YOUR_PASSWORD");
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/", "root", "Shingo");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
             stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbname);
@@ -39,7 +39,7 @@ public class MySQLHelper {
             conn.close();
             
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             stmt = conn.createStatement();
@@ -50,15 +50,13 @@ public class MySQLHelper {
                     "Question TEXT NOT NULL, " +
                     "Response TEXT NOT NULL, " +
                     "SurveyId TEXT NOT NULL, " +
-                    "OrgId TEXT NOT NULL, PRIMARY KEY (id));";
+                    "PRIMARY KEY (id));";
             stmt.execute(sql);
             stmt.close();
             conn.commit();
             conn.setAutoCommit(true);
             conn.close();
-        } catch (InstantiationException ex) {
-            Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
+        } catch (InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -67,13 +65,13 @@ public class MySQLHelper {
         try {
             // TODO: Change login info
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
             for(ResponseSet res : list){
-                String sql = "INSERT INTO Response_Set (Question, Response, SurveyId, OrgId) " +
-                        "VALUES ( '" + res.getQuestion() + "', '" + res.getReponse() + "', '" + res.getSurveyId() + "', '" + res.getOrgId() + "');";
+                String sql = "INSERT INTO Response_Set (Question, Response, SurveyId) " +
+                        "VALUES ( '" + res.getQuestion() + "', '" + res.getReponse() + "', '" + res.getSurveyId() + "');";
                 
                 stmt.execute(sql);
             }
@@ -82,9 +80,27 @@ public class MySQLHelper {
             conn.commit();
             conn.setAutoCommit(true);
             conn.close();
-        } catch (InstantiationException ex) {
+        } catch (InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
+        }
+    }
+    
+    public void dropTable(String name) throws SQLException, ClassNotFoundException{
+                try {
+            // TODO: Change login info
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
+            System.out.println("Connected to database successfully!");
+            conn.setAutoCommit(false);
+            Statement stmt = conn.createStatement();
+            String sql = "DROP TABLE IF EXISTS " + name;
+            stmt.execute(sql);
+            
+            stmt.close();
+            conn.commit();
+            conn.setAutoCommit(true);
+            conn.close();
+        } catch (InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -93,7 +109,7 @@ public class MySQLHelper {
         try {
             StringBuilder str = new StringBuilder();
             StringBuilder val = new StringBuilder();            
-            List<String> filter = Arrays.asList("Id","Insight_Organization__c", "Gender__c", "Age__c", "Years_with_Employer__c", "Years_in_Current_Position__c", "Native_Language__c", "Skill_in_English__c","Level_of_Education__c", "Scope__c", "Role__c","Department_of_Job_Function__c","Position__c");
+            List<String> filter = Arrays.asList("Id","Insight_Organization__c", "Gender__c", "Age__c", "Years_with_Employer__c", "Years_in_Current_Position__c", "Native_Language__c", "Skill_in_English__c","Level_of_Education__c", "Scope__c", "Role__c","Department_or_Job_Function__c","Position__c");
             Iterator<?> keys = org.keys();
             while(keys.hasNext()){
                 String key = (String)keys.next();
@@ -112,7 +128,7 @@ public class MySQLHelper {
             values = values.substring(0, values.length() - 2);
    
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
@@ -140,9 +156,7 @@ public class MySQLHelper {
             conn.commit();
             conn.setAutoCommit(true);
             conn.close();
-        } catch (InstantiationException ex) {
-            Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
+        } catch (InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -167,7 +181,7 @@ public class MySQLHelper {
             values = values.substring(0, values.length() - 2);
             
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "Shingo");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
@@ -190,9 +204,7 @@ public class MySQLHelper {
             conn.commit();
             conn.setAutoCommit(true);
             conn.close();
-        } catch (InstantiationException ex) {
-            Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
+        } catch (InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(MySQLHelper.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

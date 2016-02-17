@@ -13,13 +13,11 @@ public class ResponseSet {
     private String question;
     private String response;
     private String surveyId;
-    private String orgId;
     
-    public ResponseSet(String question, String response, String surveyId, String orgId){
+    public ResponseSet(String question, String response, String surveyId){
         this.question = question;
         this.response = response;
         this.surveyId = surveyId;
-        this.orgId = orgId;
     }
     
     public String getQuestion(){
@@ -32,10 +30,6 @@ public class ResponseSet {
     
     public String getSurveyId(){
         return this.surveyId;
-    }
-    
-    public String getOrgId(){
-        return this.orgId;
     }
     
     @Override

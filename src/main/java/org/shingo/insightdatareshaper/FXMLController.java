@@ -45,9 +45,9 @@ public class FXMLController implements Initializable {
     
     Scene scene, mainScene;
     // TODO: Set up Salesforce app info
-    static String ENVIRONMENT = "YOUR_ENVIRONMENT_URL";
-    static String CLIENT_ID = "YOUR_CLIENT_ID";
-    static String CLIENT_SECRET = "YOUR_CLIENT_SECRET";
+    static String ENVIRONMENT = "https://shingoforce.my.salesforce.com/";
+    static String CLIENT_ID = "3MVG9yZ.WNe6byQBbrY_zDLec9u2bivUvickAYtzgmTB1sKXOrAfTubUI9yt.71oVDZNFpsmUTsLuhbTqYVP6";
+    static String CLIENT_SECRET = "4846342501724410652";
     static String ACCESS_TOKEN;
     List insightOrgs = new ArrayList<>();
     List surveys = new ArrayList<>();
@@ -271,6 +271,7 @@ public class FXMLController implements Initializable {
                 actiontarget.setText("Oooops!!!!");
                 Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
             }
+            db.dropTable("Respondent");
             for(int i = 0; i < surveys.size(); i++){
                 String surveyId = ((RespondentSurvey) surveys.get(i)).getId();
                 String urlString = ENVIRONMENT + "services/data/v32.0/sobjects/Insight_Respondent_Survey__c/" + surveyId;
@@ -297,13 +298,19 @@ public class FXMLController implements Initializable {
                     JSONObject result = new JSONObject(responseStrBuilder.toString());
                     db.insertRespondent(result);
                     Iterator<?> keys = result.keys();
-                    List<String> filter = Arrays.asList("LastModifiedById","IsDeleted","Id","CreatedById", "Insight_Organization__c", "Gender__c", "Age__c", "Years_with_Employer__c", "Years_in_Current_Position__c", "Native_Language__c", "Skill_in_English__c","Level_of_Education__c", "Scope__c", "Role__c","Department_of_Job_Function__c","Position__c");
+                    List<String> filter = Arrays.asList("Name", "LastModifiedById","IsDeleted","Id","CreatedById", "Insight_Organization__c", "Gender__c", "Age__c", "Years_with_Employer__c", "Years_in_Current_Position__c", "Native_Language__c", "Skill_in_English__c","Level_of_Education__c", "Scope__c", "Role__c","Department_or_Job_Function__c","Position__c");
                     responseSet.clear();
                     while(keys.hasNext()){
                         String key = (String)keys.next();
                         if(result.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System") || filter.contains(key)) {}
                         else {
-                            responseSet.add(new ResponseSet(key,result.get(key).toString(),surveyId,selectedOrg.getId()));
+                            if(key.contains("SocD")){
+                                boolean bool = (result.get(key).equals("1") || result.get(key).equals("true") || result.get(key).equals("True"));
+                                responseSet.add(new ResponseSet(key,String.valueOf(bool),surveyId));
+                            }
+                            else{
+                                responseSet.add(new ResponseSet(key,result.get(key).toString(),surveyId));
+                            }
                         }
                     }
                     insertResponseSet(responseSet);
