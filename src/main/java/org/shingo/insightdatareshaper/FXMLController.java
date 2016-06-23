@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +32,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.beans.value.ChangeListener;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.HBox;
 import org.json.JSONArray;
@@ -63,11 +66,17 @@ public class FXMLController implements Initializable {
     @FXML private ListView insightorgs;
     @FXML private HBox infobox;
     @FXML private Text size;
+    @FXML private CheckBox rememberMe;
+    
+    //private OSXKeychain keychain;
     
     @FXML
-    private void handleSubmitButtonAction(ActionEvent event) {
+    private void handleSubmitButtonAction(ActionEvent event) throws KeyStoreException {
         String username = userField.getText();
         String password = passwordField.getText();
+        /*if(rememberMe.isSelected()){
+           keychain.addGenericPassword("Data Reshaper", username, password);
+        }*/
         System.out.println("Username: " + username + "; Password: " + password);;
         String urlString = ENVIRONMENT + "services/oauth2/token?grant_type=password&client_id=" + 
                 CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&username=" + 
@@ -305,7 +314,7 @@ public class FXMLController implements Initializable {
                         if(result.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System") || filter.contains(key)) {}
                         else {
                             if(key.contains("SocD")){
-                                boolean bool = (result.get(key).equals("1") || result.get(key).equals("true") || result.get(key).equals("True"));
+                                boolean bool = (result.get(key).equals("1") || result.get(key).equals("true") || result.get(key).equals("True") || result.get(key).equals("TRUE"));
                                 responseSet.add(new ResponseSet(key,String.valueOf(bool),surveyId));
                             }
                             else{
