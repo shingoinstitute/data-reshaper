@@ -5,12 +5,8 @@
  */
 package org.shingo.insightdatareshaper;
 
-import com.mcdermottroe.apple.OSXKeychain;
-import com.mcdermottroe.apple.OSXKeychainException;
 import java.net.URL;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -28,12 +24,7 @@ import javafx.scene.text.Text;
 public class SalesforceSettingsController implements Initializable {
 
     public SalesforceSettingsController(){
-                this.prefs = Preferences.userNodeForPackage(MySQLSettingsController.class);
-        try {
-            this.keychain = OSXKeychain.getInstance();
-        } catch (OSXKeychainException ex) {
-            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        this.prefs = Preferences.userNodeForPackage(MySQLSettingsController.class);
     }
     
     
@@ -43,9 +34,7 @@ public class SalesforceSettingsController implements Initializable {
     }
     
     Scene scene, mainScene;
-    OSXKeychain keychain;
     Preferences prefs;
-    String SERVICE_NAME = "Data Reshaper Salesforce API";
     
     @FXML private TextField environmentField;
     @FXML private TextField idField;
@@ -61,29 +50,7 @@ public class SalesforceSettingsController implements Initializable {
         }
         prefs.put("environment", environmentField.getText());
         prefs.put("id", idField.getText());
-        String password = "";
-        try {
-            password = keychain.findGenericPassword(SERVICE_NAME, idField.getText());
-        } catch (OSXKeychainException ex) {
-            // Do nothing as the password was not found
-        }
-        if(!password.equals("")){
-            if(!password.equals(secretField.getText())){
-                try {
-                    keychain.modifyGenericPassword(SERVICE_NAME, idField.getText(), secretField.getText());
-                } catch (OSXKeychainException ex) {
-                    actiontarget.setText("Couldn't save password!");
-                    Logger.getLogger(MySQLSettingsController.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        } else {
-            try {
-                keychain.addGenericPassword(SERVICE_NAME, idField.getText(), secretField.getText());
-            } catch (OSXKeychainException ex) {
-                actiontarget.setText("Couldn't save password!");
-                Logger.getLogger(MySQLSettingsController.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+        prefs.put("secret", secretField.getText());
         
         actiontarget.setText("Settings Saved!");
     }
@@ -95,11 +62,7 @@ public class SalesforceSettingsController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         environmentField.setText(prefs.get("environment", "https://salesforce.com"));
         idField.setText(prefs.get("id", ""));
-        try {
-            secretField.setText(keychain.findGenericPassword(SERVICE_NAME, idField.getText()));
-        } catch (OSXKeychainException ex) {
-            Logger.getLogger(SalesforceSettingsController.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        secretField.setText(prefs.get("secret", ""));
     }    
     
 }

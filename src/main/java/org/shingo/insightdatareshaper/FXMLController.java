@@ -1,7 +1,5 @@
 package org.shingo.insightdatareshaper;
 
-import com.mcdermottroe.apple.OSXKeychain;
-import com.mcdermottroe.apple.OSXKeychainException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -46,11 +44,6 @@ public class FXMLController implements Initializable {
     public FXMLController() {
         this.prefs = Preferences.userNodeForPackage(FXMLController.class);
         this.sf_prefs = Preferences.userNodeForPackage(SalesforceSettingsController.class);
-        try {
-            this.keychain = OSXKeychain.getInstance();
-        } catch (OSXKeychainException ex) {
-            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
     interface Callback
     {
@@ -70,7 +63,7 @@ public class FXMLController implements Initializable {
     int totalSize = 0;
     int completedSurveys = 0;
     ProgressIndicator pi;
-    OSXKeychain keychain;
+    Preferences passwordStore;
     Preferences prefs;
     Preferences sf_prefs;
     String PREF_NAME="datareshaper_username";
@@ -89,13 +82,8 @@ public class FXMLController implements Initializable {
         String username = userField.getText();
         String password = passwordField.getText();
         if(rememberMe.isSelected()){
-            try {
-                actiontarget.setText("Credentials not saved!");
-                rememberMe(username, password);
-            } catch (OSXKeychainException ex) {
-                
-                Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            actiontarget.setText("Credentials not saved!");
+            rememberMe(username, password);
         } else {
             if(prefs.getBoolean("REMEMBER_ME", false)){
                 prefs.putBoolean("REMEMBER_ME", false);
@@ -188,24 +176,19 @@ public class FXMLController implements Initializable {
         }
     }
     
-    private void rememberMe(String username, String password) throws OSXKeychainException{
+    private void rememberMe(String username, String password) {
         prefs.putBoolean("REMEMBER_ME",true);
         if(!prefs.get(PREF_NAME, "").equals(username)){
             prefs.put(PREF_NAME, username);
         }
-        String pass ="";
-        try{
-            pass = keychain.findGenericPassword("Data Reshaper", username);
-        } catch(OSXKeychainException ex){
-            
-        }
+        String pass = prefs.get("pass", username);
         if(!pass.equals("")){
             if(!pass.equals(password)){
-                keychain.modifyGenericPassword("Data Reshaper", username, password);
+                prefs.put("pass", password);
             }
             return;
         }
-        keychain.addGenericPassword("Data Reshaper", username, password);
+        prefs.put("pass", password);
     }
     
     @FXML
@@ -390,12 +373,7 @@ public class FXMLController implements Initializable {
     private void initSalesforce(){
         ENVIRONMENT = sf_prefs.get("environment","https://salesforce.com");
         CLIENT_ID =sf_prefs.get("id", "");
-        try {
-            CLIENT_SECRET = keychain.findGenericPassword("Data Reshaper Salesforce API", CLIENT_ID);
-        } catch (OSXKeychainException ex) {
-            CLIENT_SECRET = "";
-            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        CLIENT_SECRET = sf_prefs.get("secret", "");
     }
     
     @FXML
@@ -405,14 +383,7 @@ public class FXMLController implements Initializable {
         if(!url.getPath().contains("Login")) return;
         if(prefs.getBoolean("REMEMBER_ME", false)){            
             String username = prefs.get(PREF_NAME, "");
-            String password = "";
-            if(!username.equals("")){
-                try {
-                    password = keychain.findGenericPassword("Data Reshaper", username);
-                } catch (OSXKeychainException ex) {
-                    Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
+            String password = prefs.get("pass", username);
 
             userField.setText(username);
             passwordField.setText(password);

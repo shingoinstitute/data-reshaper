@@ -5,8 +5,6 @@
  */
 package org.shingo.insightdatareshaper;
 
-import com.mcdermottroe.apple.OSXKeychain;
-import com.mcdermottroe.apple.OSXKeychainException;
 import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -33,18 +31,12 @@ public class MySQLHelper {
     private String PASSWORD;
     private String HOST;
     private Preferences prefs;
-    private OSXKeychain keychain;
     
     private void getCredentialsFromSettings(){
         this.prefs = Preferences.userNodeForPackage(MySQLSettingsController.class);
         USERNAME = prefs.get("username", "root");
         HOST = prefs.get("host", "localhost");
-        try {
-            this.keychain = OSXKeychain.getInstance();
-            PASSWORD = keychain.findGenericPassword("Data Reshaper MySQL", USERNAME);
-        } catch (OSXKeychainException ex) {            
-            PASSWORD = "password";
-        }
+        PASSWORD = prefs.get("password", "password");
     }
     
     public MySQLHelper(String dbname) throws SQLException, ClassNotFoundException{
