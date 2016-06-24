@@ -7,9 +7,9 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.text.*?>
-
-<GridPane fx:controller="org.shingo.insightdatareshaper.FXMLController" 
-    xmlns:fx="http://javafx.com/fxml" alignment="center" hgap="10" vgap="10" styleClass="login">
+<VBox fx:controller="org.shingo.insightdatareshaper.FXMLController" 
+    xmlns:fx="http://javafx.com/fxml" >
+<GridPane alignment="center" hgap="10" vgap="10" styleClass="login">
 <padding><Insets top="25" right="25" bottom="10" left="25"/></padding>
     <Text id="welcome-text" text="Welcome | Salesforce Login" 
         GridPane.columnIndex="0" GridPane.rowIndex="0"
@@ -42,3 +42,4 @@
     <Text fx:id="actiontarget"
            GridPane.columnIndex="1" GridPane.rowIndex="6"/>
 </GridPane>
+</VBox>

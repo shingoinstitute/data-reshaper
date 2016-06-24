@@ -130,12 +130,6 @@
    </repositories>
     <dependencies>
         <dependency>
-            <groupId>org.shingo</groupId>
-            <artifactId>osxkeychain</artifactId>
-            <version>1.0.0</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20141113</version>

@@ -17,6 +17,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import static javafx.application.Application.launch;
 import javafx.scene.image.Image;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 
 
 public class MainApp extends Application {
@@ -61,10 +63,9 @@ public class MainApp extends Application {
         
         MenuBar menuBar = new MenuBar();
         menuBar.getMenus().addAll(menu1);
-        menuBar.setUseSystemMenuBar(true);        
- 
- 
-        ((GridPane) scene.getRoot()).getChildren().addAll(menuBar);
+        menuBar.setUseSystemMenuBar(true);
+        
+        ((VBox) scene.getRoot()).getChildren().add(menuBar);
         
         stage.setTitle("Insight Data-Reshaper");
         stage.setScene(scene);

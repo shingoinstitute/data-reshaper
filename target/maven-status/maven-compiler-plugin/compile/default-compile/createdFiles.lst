@@ -1,12 +1,12 @@
 org/shingo/insightdatareshaper/SalesforceSettingsController$Callback.class
-org/shingo/insightdatareshaper/FXMLController.class
 org/shingo/insightdatareshaper/MainApp$1.class
+org/shingo/insightdatareshaper/FXMLController.class
 org/shingo/insightdatareshaper/MainApp.class
 org/shingo/insightdatareshaper/MySQLSettingsController$Callback.class
 org/shingo/insightdatareshaper/SalesforceSettingsController.class
-org/shingo/insightdatareshaper/FXMLController$1OneShotTask.class
-org/shingo/insightdatareshaper/FXMLController$2.class
 org/shingo/insightdatareshaper/MySQLSettingsController.class
+org/shingo/insightdatareshaper/FXMLController$2.class
+org/shingo/insightdatareshaper/FXMLController$1OneShotTask.class
 org/shingo/insightdatareshaper/MainApp$2.class
 org/shingo/insightdatareshaper/FXMLController$1.class
 org/shingo/insightdatareshaper/InsightOrg.class

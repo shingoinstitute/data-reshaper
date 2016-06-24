@@ -37,7 +37,6 @@
     <key>JVMClassPaths</key>
     <array>
       <string>org/shingo/InsightDataReshaper/4.0/InsightDataReshaper-4.0.jar</string>
-      <string>org/shingo/osxkeychain/1.0.0/osxkeychain-1.0.0.jar</string>
       <string>org/json/json/20141113/json-20141113.jar</string>
       <string>org/xerial/sqlite-jdbc/3.8.11.2/sqlite-jdbc-3.8.11.2.jar</string>
       <string>mysql/mysql-connector-java/5.1.37/mysql-connector-java-5.1.37.jar</string>
