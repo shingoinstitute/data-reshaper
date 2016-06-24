@@ -1,6 +1,6 @@
-/home/dustinehoman/Documents/data-reshaper/src/main/java/org/shingo/insightdatareshaper/FXMLController.java
-/home/dustinehoman/Documents/data-reshaper/src/main/java/org/shingo/insightdatareshaper/ResponseSet.java
-/home/dustinehoman/Documents/data-reshaper/src/main/java/org/shingo/insightdatareshaper/RespondentSurvey.java
-/home/dustinehoman/Documents/data-reshaper/src/main/java/org/shingo/insightdatareshaper/MySQLHelper.java
-/home/dustinehoman/Documents/data-reshaper/src/main/java/org/shingo/insightdatareshaper/InsightOrg.java
-/home/dustinehoman/Documents/data-reshaper/src/main/java/org/shingo/insightdatareshaper/MainApp.java
+/Users/dustinhoman/Documents/work/data-reshaper/src/main/java/org/shingo/insightdatareshaper/InsightOrg.java
+/Users/dustinhoman/Documents/work/data-reshaper/src/main/java/org/shingo/insightdatareshaper/MySQLHelper.java
+/Users/dustinhoman/Documents/work/data-reshaper/src/main/java/org/shingo/insightdatareshaper/MainApp.java
+/Users/dustinhoman/Documents/work/data-reshaper/src/main/java/org/shingo/insightdatareshaper/RespondentSurvey.java
+/Users/dustinhoman/Documents/work/data-reshaper/src/main/java/org/shingo/insightdatareshaper/FXMLController.java
+/Users/dustinhoman/Documents/work/data-reshaper/src/main/java/org/shingo/insightdatareshaper/ResponseSet.java

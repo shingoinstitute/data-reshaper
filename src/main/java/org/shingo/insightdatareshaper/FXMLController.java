@@ -6,8 +6,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +39,14 @@ import static org.json.JSONObject.NULL;
 
 
 public class FXMLController implements Initializable {
+
+    public FXMLController() {
+//        try {
+//            this.keychain = OSXKeychain.getInstance();
+//        } catch (OSXKeychainException ex) {
+//            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+    }
     interface Callback
     {
         void callback();
@@ -59,6 +65,7 @@ public class FXMLController implements Initializable {
     int totalSize = 0;
     int completedSurveys = 0;
     ProgressIndicator pi;
+//    OSXKeychain keychain;
     
     @FXML private TextField userField;
     @FXML private PasswordField passwordField;
@@ -68,10 +75,9 @@ public class FXMLController implements Initializable {
     @FXML private Text size;
     @FXML private CheckBox rememberMe;
     
-    //private OSXKeychain keychain;
     
     @FXML
-    private void handleSubmitButtonAction(ActionEvent event) throws KeyStoreException {
+    private void handleSubmitButtonAction(ActionEvent event) {
         String username = userField.getText();
         String password = passwordField.getText();
         /*if(rememberMe.isSelected()){

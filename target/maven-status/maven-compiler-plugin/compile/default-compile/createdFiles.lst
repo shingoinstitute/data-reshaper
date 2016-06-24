@@ -1,10 +1,10 @@
+org/shingo/insightdatareshaper/RespondentSurvey.class
 org/shingo/insightdatareshaper/FXMLController.class
+org/shingo/insightdatareshaper/InsightOrg.class
+org/shingo/insightdatareshaper/MySQLHelper.class
 org/shingo/insightdatareshaper/MainApp.class
+org/shingo/insightdatareshaper/ResponseSet.class
+org/shingo/insightdatareshaper/FXMLController$Callback.class
 org/shingo/insightdatareshaper/FXMLController$2.class
 org/shingo/insightdatareshaper/FXMLController$1OneShotTask.class
 org/shingo/insightdatareshaper/FXMLController$1.class
-org/shingo/insightdatareshaper/InsightOrg.class
-org/shingo/insightdatareshaper/ResponseSet.class
-org/shingo/insightdatareshaper/MySQLHelper.class
-org/shingo/insightdatareshaper/RespondentSurvey.class
-org/shingo/insightdatareshaper/FXMLController$Callback.class
