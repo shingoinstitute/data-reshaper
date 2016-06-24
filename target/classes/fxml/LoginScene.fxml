@@ -27,6 +27,12 @@
     <PasswordField fx:id="passwordField" 
         GridPane.columnIndex="1" GridPane.rowIndex="2"/>
     
+    <Label text="Remember Me!" 
+        GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+    
+    <CheckBox fx:id="rememberMe"
+        GridPane.columnIndex="1" GridPane.rowIndex="3"/>  
+    
     <HBox spacing="10" alignment="bottom_right" 
         GridPane.columnIndex="1" GridPane.rowIndex="4">
         <Button text="Sign In"     

@@ -4,7 +4,7 @@
 
     <groupId>org.shingo</groupId>
     <artifactId>InsightDataReshaper</artifactId>
-    <version>3.1</version>
+    <version>4.0</version>
     <packaging>jar</packaging>
 
     <name>Insight Data Reshaper</name>
@@ -102,6 +102,24 @@
                     </additionalClasspathElements>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>sh.tak.appbundler</groupId>
+                <artifactId>appbundle-maven-plugin</artifactId>
+                <version>1.1.0</version>
+                <configuration>
+                    <mainClass>org.shingo.insightdatareshaper.MainApp</mainClass>
+                    <generateDiskImageFile>true</generateDiskImageFile>
+                    <iconFile>/images/shingo_flame.png.icns</iconFile>
+                </configuration>
+                <executions>
+                  <execution>
+                    <phase>package</phase>
+                    <goals>
+                      <goal>bundle</goal>
+                    </goals>
+                  </execution>
+                </executions>
+              </plugin>
         </plugins>
     </build>
        <repositories>
@@ -111,6 +129,12 @@
       </repository>
    </repositories>
     <dependencies>
+        <dependency>
+            <groupId>org.shingo</groupId>
+            <artifactId>osxkeychain</artifactId>
+            <version>1.0.0</version>
+            <type>jar</type>
+        </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
@@ -126,6 +150,12 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.37</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.4</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 </project>

@@ -5,6 +5,8 @@
  */
 package org.shingo.insightdatareshaper;
 
+import com.mcdermottroe.apple.OSXKeychain;
+import com.mcdermottroe.apple.OSXKeychainException;
 import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -15,7 +17,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.Preferences;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.json.JSONObject;
+
 
 /**
  *
@@ -23,13 +28,32 @@ import org.json.JSONObject;
  */
 public class MySQLHelper {
     private Connection conn = null;
-    private String dbname;
+    private String dbname;    
+    private String USERNAME;
+    private String PASSWORD;
+    private String HOST;
+    private Preferences prefs;
+    private OSXKeychain keychain;
+    
+    private void getCredentialsFromSettings(){
+        this.prefs = Preferences.userNodeForPackage(MySQLSettingsController.class);
+        USERNAME = prefs.get("username", "root");
+        HOST = prefs.get("host", "localhost");
+        try {
+            this.keychain = OSXKeychain.getInstance();
+            PASSWORD = keychain.findGenericPassword("Data Reshaper MySQL", USERNAME);
+        } catch (OSXKeychainException ex) {            
+            PASSWORD = "password";
+        }
+    }
+    
     public MySQLHelper(String dbname) throws SQLException, ClassNotFoundException{
+        getCredentialsFromSettings();
         try {
             this.dbname = dbname;
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/", "root", "YOUR_PASSWORD");
+            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/", USERNAME, "JoeSmith1820!!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
             stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbname);
@@ -39,7 +63,7 @@ public class MySQLHelper {
             conn.close();
             
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/" + dbname, USERNAME, "JoeSmith1820!!");           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             stmt = conn.createStatement();
@@ -65,13 +89,15 @@ public class MySQLHelper {
         try {
             // TODO: Change login info
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/" + dbname, USERNAME, PASSWORD);           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
             for(ResponseSet res : list){
+                String question = StringEscapeUtils.escapeSql(res.getQuestion());
+                String response = StringEscapeUtils.escapeSql(res.getReponse());
                 String sql = "INSERT INTO Response_Set (Question, Response, SurveyId) " +
-                        "VALUES ( '" + res.getQuestion() + "', '" + res.getReponse() + "', '" + res.getSurveyId() + "');";
+                        "VALUES ( '" + question + "', '" + response + "', '" + res.getSurveyId() + "');";
                 
                 stmt.execute(sql);
             }
@@ -89,7 +115,7 @@ public class MySQLHelper {
                 try {
             // TODO: Change login info
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/" + dbname, USERNAME, PASSWORD);           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
@@ -128,7 +154,7 @@ public class MySQLHelper {
             values = values.substring(0, values.length() - 2);
    
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/" + dbname, USERNAME, PASSWORD);           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
@@ -181,7 +207,7 @@ public class MySQLHelper {
             values = values.substring(0, values.length() - 2);
             
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/" + dbname, "root", "YOUR_PASSWORD");           
+            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/" + dbname, USERNAME, PASSWORD);           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();

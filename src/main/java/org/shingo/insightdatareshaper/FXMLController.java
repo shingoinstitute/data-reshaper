@@ -1,5 +1,7 @@
 package org.shingo.insightdatareshaper;
 
+import com.mcdermottroe.apple.OSXKeychain;
+import com.mcdermottroe.apple.OSXKeychainException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.Preferences;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -41,11 +44,13 @@ import static org.json.JSONObject.NULL;
 public class FXMLController implements Initializable {
 
     public FXMLController() {
-//        try {
-//            this.keychain = OSXKeychain.getInstance();
-//        } catch (OSXKeychainException ex) {
-//            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-//        }
+        this.prefs = Preferences.userNodeForPackage(FXMLController.class);
+        this.sf_prefs = Preferences.userNodeForPackage(SalesforceSettingsController.class);
+        try {
+            this.keychain = OSXKeychain.getInstance();
+        } catch (OSXKeychainException ex) {
+            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     interface Callback
     {
@@ -54,9 +59,9 @@ public class FXMLController implements Initializable {
     
     Scene scene, mainScene;
     // TODO: Set up Salesforce app info
-    static String ENVIRONMENT = "YOUR_ENVIRONMENT_URL";
-    static String CLIENT_ID = "YOUR_CLIENT_ID";
-    static String CLIENT_SECRET = "YOUR_CLIENT_SECRET";
+    static String ENVIRONMENT;
+    static String CLIENT_ID;
+    static String CLIENT_SECRET;
     static String ACCESS_TOKEN;
     List insightOrgs = new ArrayList<>();
     List surveys = new ArrayList<>();
@@ -65,7 +70,10 @@ public class FXMLController implements Initializable {
     int totalSize = 0;
     int completedSurveys = 0;
     ProgressIndicator pi;
-//    OSXKeychain keychain;
+    OSXKeychain keychain;
+    Preferences prefs;
+    Preferences sf_prefs;
+    String PREF_NAME="datareshaper_username";
     
     @FXML private TextField userField;
     @FXML private PasswordField passwordField;
@@ -80,11 +88,21 @@ public class FXMLController implements Initializable {
     private void handleSubmitButtonAction(ActionEvent event) {
         String username = userField.getText();
         String password = passwordField.getText();
-        /*if(rememberMe.isSelected()){
-           keychain.addGenericPassword("Data Reshaper", username, password);
-        }*/
-        System.out.println("Username: " + username + "; Password: " + password);;
-        String urlString = ENVIRONMENT + "services/oauth2/token?grant_type=password&client_id=" + 
+        if(rememberMe.isSelected()){
+            try {
+                actiontarget.setText("Credentials not saved!");
+                rememberMe(username, password);
+            } catch (OSXKeychainException ex) {
+                
+                Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            if(prefs.getBoolean("REMEMBER_ME", false)){
+                prefs.putBoolean("REMEMBER_ME", false);
+            }
+        }
+
+        String urlString = ENVIRONMENT + "/services/oauth2/token?grant_type=password&client_id=" + 
                 CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&username=" + 
                 username + "&password=" + password;
         URL url = null;
@@ -110,7 +128,7 @@ public class FXMLController implements Initializable {
             ACCESS_TOKEN = result.getString("access_token");
             if(!ACCESS_TOKEN.equals(""))
             {
-                urlString = ENVIRONMENT + "services/data/v32.0/query?q=SELECT+Name,+Status__c+from+Insight_Organization__c+WHERE+Status__c%3D%27Survey%20Complete%2C%20Waiting%20Report%27";
+                urlString = ENVIRONMENT + "/services/data/v32.0/query?q=SELECT+Name,+Status__c+from+Insight_Organization__c+WHERE+Status__c%3D%27Survey%20Complete%2C%20Waiting%20Report%27";
                 url = new URL(urlString);
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
@@ -170,6 +188,26 @@ public class FXMLController implements Initializable {
         }
     }
     
+    private void rememberMe(String username, String password) throws OSXKeychainException{
+        prefs.putBoolean("REMEMBER_ME",true);
+        if(!prefs.get(PREF_NAME, "").equals(username)){
+            prefs.put(PREF_NAME, username);
+        }
+        String pass ="";
+        try{
+            pass = keychain.findGenericPassword("Data Reshaper", username);
+        } catch(OSXKeychainException ex){
+            
+        }
+        if(!pass.equals("")){
+            if(!pass.equals(password)){
+                keychain.modifyGenericPassword("Data Reshaper", username, password);
+            }
+            return;
+        }
+        keychain.addGenericPassword("Data Reshaper", username, password);
+    }
+    
     @FXML
     private void handleLogoutButtonAction(ActionEvent event) {
         Stage stage = (Stage) ((Node)event.getSource()).getScene().getWindow();
@@ -190,7 +228,7 @@ public class FXMLController implements Initializable {
     @FXML
     private void handleReshapeButtonAction(ActionEvent event) {
         if(selectedOrg != NULL){
-            String urlString = ENVIRONMENT + "services/data/v32.0/query?q=SELECT+name+from+Insight_Respondent_Survey__c+where+Insight_Organization__c+=+'" + selectedOrg.getId() + "'";
+            String urlString = ENVIRONMENT + "/services/data/v32.0/query?q=SELECT+name+from+Insight_Respondent_Survey__c+where+Insight_Organization__c+=+'" + selectedOrg.getId() + "'";
             URL url = null;
             try {
                 url = new URL(urlString);
@@ -261,7 +299,7 @@ public class FXMLController implements Initializable {
         try {
             List<ResponseSet> responseSet = new ArrayList<>();
             db = new MySQLHelper("Insight_Organization");
-            String orgurlstring = ENVIRONMENT + selectedOrg.getUrl().substring(1);
+            String orgurlstring = ENVIRONMENT + "/" + selectedOrg.getUrl().substring(1);
             URL orgurl = null;
             try {
                 orgurl = new URL(orgurlstring);
@@ -289,7 +327,7 @@ public class FXMLController implements Initializable {
             db.dropTable("Respondent");
             for(int i = 0; i < surveys.size(); i++){
                 String surveyId = ((RespondentSurvey) surveys.get(i)).getId();
-                String urlString = ENVIRONMENT + "services/data/v32.0/sobjects/Insight_Respondent_Survey__c/" + surveyId;
+                String urlString = ENVIRONMENT + "//services/data/v32.0/sobjects/Insight_Respondent_Survey__c/" + surveyId;
                 URL url = null;
                 try {
                     url = new URL(urlString);
@@ -349,8 +387,36 @@ public class FXMLController implements Initializable {
         }
     }
     
+    private void initSalesforce(){
+        ENVIRONMENT = sf_prefs.get("environment","https://salesforce.com");
+        CLIENT_ID =sf_prefs.get("id", "");
+        try {
+            CLIENT_SECRET = keychain.findGenericPassword("Data Reshaper Salesforce API", CLIENT_ID);
+        } catch (OSXKeychainException ex) {
+            CLIENT_SECRET = "";
+            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    @FXML
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        // TODO
+        initSalesforce();
+        if(!url.getPath().contains("Login")) return;
+        if(prefs.getBoolean("REMEMBER_ME", false)){            
+            String username = prefs.get(PREF_NAME, "");
+            String password = "";
+            if(!username.equals("")){
+                try {
+                    password = keychain.findGenericPassword("Data Reshaper", username);
+                } catch (OSXKeychainException ex) {
+                    Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            userField.setText(username);
+            passwordField.setText(password);
+            rememberMe.setSelected(true);
+        }
     }    
 }
