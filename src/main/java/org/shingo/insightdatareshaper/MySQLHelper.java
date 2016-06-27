@@ -45,7 +45,7 @@ public class MySQLHelper {
             this.dbname = dbname;
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/", USERNAME, "JoeSmith1820!!");
+            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/", USERNAME, PASSWORD);
             conn.setAutoCommit(false);
             Statement stmt = conn.createStatement();
             stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbname);
@@ -55,7 +55,7 @@ public class MySQLHelper {
             conn.close();
             
             // TODO: Change login info
-            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/" + dbname, USERNAME, "JoeSmith1820!!");           
+            conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/" + dbname, USERNAME, PASSWORD);           
             System.out.println("Connected to database successfully!");
             conn.setAutoCommit(false);
             stmt = conn.createStatement();
