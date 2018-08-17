@@ -3,9 +3,11 @@ package org.shingo.insightdatareshaper;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +38,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.HBox;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import static org.json.JSONObject.NULL;
 
 
@@ -45,29 +48,23 @@ public class FXMLController implements Initializable {
         this.prefs = Preferences.userNodeForPackage(FXMLController.class);
         this.sf_prefs = Preferences.userNodeForPackage(SalesforceSettingsController.class);
     }
-    interface Callback
-    {
-        void callback();
-    }
-    
-    Scene scene, mainScene;
+
     // TODO: Set up Salesforce app info
-    static String ENVIRONMENT;
-    static String CLIENT_ID;
-    static String CLIENT_SECRET;
-    static String ACCESS_TOKEN;
-    List insightOrgs = new ArrayList<>();
-    List surveys = new ArrayList<>();
-    static InsightOrg selectedOrg;
-    MySQLHelper db;
-    int totalSize = 0;
-    int completedSurveys = 0;
-    ProgressIndicator pi;
-    Preferences passwordStore;
-    Preferences prefs;
-    Preferences sf_prefs;
-    String PREF_NAME="datareshaper_username";
-    
+    private static String CLIENT_ID;
+    private static String CLIENT_SECRET;
+    private static String ACCESS_TOKEN;
+    private List<InsightOrg> orgList = new ArrayList<>();
+    private List<RespondentSurvey> respondentSurveys = new ArrayList<>();
+    private static InsightOrg selectedOrg;
+    private MySQLHelper db;
+    private int totalSize = 0;
+    private int completedSurveys = 0;
+    private ProgressIndicator pi;
+    private Preferences prefs;
+    private Preferences sf_prefs;
+    private String PREF_NAME="datareshaper_username";
+    private SalesforceConnector sf;
+
     @FXML private TextField userField;
     @FXML private PasswordField passwordField;
     @FXML private Text actiontarget;
@@ -75,13 +72,12 @@ public class FXMLController implements Initializable {
     @FXML private HBox infobox;
     @FXML private Text size;
     @FXML private CheckBox rememberMe;
-    
-    
-    @FXML
-    private void handleSubmitButtonAction(ActionEvent event) {
+
+    private String login() throws IOException {
         String username = userField.getText();
         String password = passwordField.getText();
-        if(rememberMe.isSelected()){
+
+        if (rememberMe.isSelected()) {
             actiontarget.setText("Credentials not saved!");
             rememberMe(username, password);
         } else {
@@ -90,81 +86,102 @@ public class FXMLController implements Initializable {
             }
         }
 
-        String urlString = ENVIRONMENT + "/services/oauth2/token?grant_type=password&client_id=" + 
-                CLIENT_ID + "&client_secret=" + CLIENT_SECRET + "&username=" + 
-                username + "&password=" + password;
-        URL url = null;
-        try {
-            url = new URL(urlString);
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
+        return this.sf.connect(CLIENT_ID, CLIENT_SECRET, username, password);
+    }
+
+    private String buildSOQLQuery(String sobject, String[] fields, String clause) throws UnsupportedEncodingException {
+        String query = "SELECT " + String.join(", ", fields) + " FROM " + sobject +
+                (clause != null ? " WHERE " + clause : "");
+        return "/services/data/v32.0/query?q=" + URLEncoder.encode(query, "UTF-8");
+    }
+
+    private InsightOrg createInsightOrg(JSONObject jorg) {
+        InsightOrg org = new InsightOrg();
+        org.setName(jorg.getString("Name"));
+        String objUrl = jorg.getJSONObject("attributes").getString("url");
+        org.setUrl(objUrl);
+        String[] split = objUrl.split("/");
+        org.setId(split[split.length - 1]);
+
+        return org;
+    }
+
+    private List<InsightOrg> getInsightOrgs() throws IOException {
+        String[] fields = {
+                "Name",
+                "Status__c"
+        };
+        String sobject = "Insight_Organization__c";
+        String clause = "Status__c='Survey Complete, Waiting Report'";
+        String urlString = buildSOQLQuery(sobject, fields, clause);
+        JSONObject result = sf.get(urlString);
+
+        JSONArray records = result.getJSONArray("records");
+        for(int i = 0; i < records.length(); i++){
+            JSONObject jorg = records.getJSONObject(i);
+            orgList.add(createInsightOrg(jorg));
         }
-        
+
+        return orgList;
+    }
+
+    private RespondentSurvey createRespondentSurvey(JSONObject jorg) {
+        RespondentSurvey survey = new RespondentSurvey();
+        survey.setName(jorg.getString("Name"));
+        String objUrl = jorg.getJSONObject("attributes").getString("url");
+        survey.setUrl(objUrl);
+        String[] split = objUrl.split("/");
+        survey.setId(split[split.length - 1]);
+
+        return survey;
+    }
+
+    private List<RespondentSurvey> getRespondentSurveys() throws IOException {
+        String[] fields = {
+                "Name"
+        };
+        String sobject = "Insight_Respondent_Survey__c";
+        String clause = "Insight_Organization__c = '" + selectedOrg.getId() + "'";
+        String urlString = this.buildSOQLQuery(sobject, fields, clause);
+        JSONObject result = sf.get(urlString);
+
+        System.out.println("Reshape: " + result.toString());
+        JSONArray records = result.getJSONArray("records");
+        for(int i = 0; i < records.length(); i++){
+            JSONObject jorg = records.getJSONObject(i);
+            respondentSurveys.add(createRespondentSurvey(jorg));
+        }
+
+        totalSize = result.getInt("totalSize");
+
+        return respondentSurveys;
+    }
+
+    @FXML
+    private void handleSubmitButtonAction(ActionEvent event) {
         try {
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Accept", "application/json");
-            BufferedReader streamReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8")); 
-            StringBuilder responseStrBuilder = new StringBuilder();
+            ACCESS_TOKEN = this.login();
+            List<InsightOrg> orgs = this.getInsightOrgs();
 
-            String inputStr;
-            while ((inputStr = streamReader.readLine()) != null)
-                responseStrBuilder.append(inputStr);
-            
-            System.out.println(responseStrBuilder.toString());
-            JSONObject result = new JSONObject(responseStrBuilder.toString());
-            ACCESS_TOKEN = result.getString("access_token");
-            if(!ACCESS_TOKEN.equals(""))
-            {
-                urlString = ENVIRONMENT + "/services/data/v32.0/query?q=SELECT+Name,+Status__c+from+Insight_Organization__c+WHERE+Status__c%3D%27Survey%20Complete%2C%20Waiting%20Report%27";
-                url = new URL(urlString);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("Authorization", "Bearer " + ACCESS_TOKEN);
-                connection.setRequestProperty("Content-Type", "application/json");
-                streamReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-                responseStrBuilder = new StringBuilder();
-
-                while ((inputStr = streamReader.readLine()) != null)
-                    responseStrBuilder.append(inputStr);
-                
-                System.out.println(responseStrBuilder.toString());
-                result = new JSONObject(responseStrBuilder.toString());
-                JSONArray records = result.getJSONArray("records");
-                for(int i = 0; i < records.length(); i++){
-                    JSONObject jorg = records.getJSONObject(i);
-                    InsightOrg org = new InsightOrg();
-                    org.setName(jorg.getString("Name"));
-                    String objUrl = jorg.getJSONObject("attributes").getString("url");
-                    org.setUrl(objUrl);
-                    String[] split = objUrl.split("/");
-                    org.setId(split[split.length - 1]);
-                    insightOrgs.add(org);
-                    System.out.println(org.toDebugString());
-                    
-                }
-                ObservableList<String> data = FXCollections.observableArrayList(insightOrgs);
+            if (!ACCESS_TOKEN.equals("")) {
+                ObservableList<InsightOrg> data = FXCollections.observableArrayList(orgs);
                 Stage stage = (Stage) ((Node)event.getSource()).getScene().getWindow();
                 Parent main = null;
                 try {
-                    main = FXMLLoader.load(getClass().getResource("/fxml/MainScene.fxml"));                    
+                    main = FXMLLoader.load(getClass().getResource("/fxml/MainScene.fxml"));
                 } catch (IOException ex) {
                     Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                 
-                mainScene = new Scene(main);
+
+                Scene mainScene = new Scene(main);
                 mainScene.getStylesheets().add("/styles/Styles.css");
                 insightorgs = (ListView) mainScene.lookup("#insightorgs");
                 size = (Text) mainScene.lookup("#size");
                 insightorgs.setItems(data);
                 size.setText(data.size() + " Organizations");
-                insightorgs.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<InsightOrg>() {
-                    @Override
-                    public void changed(ObservableValue<? extends InsightOrg> observable, InsightOrg oldValue, InsightOrg newValue) {
-                        // Your action here
-                        selectedOrg = newValue;
+                insightorgs.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+                        selectedOrg = (InsightOrg)newValue;
                         System.out.println("Selected item: " + selectedOrg.getId());
-                    }
                 });
                 stage.setScene(mainScene);
             }
@@ -201,8 +218,8 @@ public class FXMLController implements Initializable {
         } catch (IOException ex) {
             Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
-        scene = new Scene(root);
+
+        Scene scene = new Scene(root);
         scene.getStylesheets().add("/styles/Styles.css");
         
         stage.setScene(scene);
@@ -210,145 +227,92 @@ public class FXMLController implements Initializable {
     
     @FXML
     private void handleReshapeButtonAction(ActionEvent event) {
-        if(selectedOrg != NULL){
-            String urlString = ENVIRONMENT + "/services/data/v32.0/query?q=SELECT+name+from+Insight_Respondent_Survey__c+where+Insight_Organization__c+=+'" + selectedOrg.getId() + "'";
-            URL url = null;
+        if (selectedOrg != NULL){
             try {
-                url = new URL(urlString);
-            } catch (MalformedURLException ex) {
-                Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                // we moved to a new view, so the sf object was recreated
+                sf.setAccessToken(ACCESS_TOKEN);
+                List<RespondentSurvey> surveys = getRespondentSurveys();
 
-            try {
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("Authorization", "Bearer " + ACCESS_TOKEN);
-                connection.setRequestProperty("Content-Type", "application/json");
-                BufferedReader streamReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8")); 
-                StringBuilder responseStrBuilder = new StringBuilder();
-
-                String inputStr;
-                while ((inputStr = streamReader.readLine()) != null)
-                    responseStrBuilder.append(inputStr);
-
-                System.out.println("Reshape: " + responseStrBuilder.toString());
-                JSONObject result = new JSONObject(responseStrBuilder.toString());
-                JSONArray records = result.getJSONArray("records");
-                for(int i = 0; i < records.length(); i++){
-                    JSONObject jorg = records.getJSONObject(i);
-                    RespondentSurvey survey = new RespondentSurvey();
-                    survey.setName(jorg.getString("Name"));
-                    String objUrl = jorg.getJSONObject("attributes").getString("url");
-                    survey.setUrl(objUrl);
-                    String[] split = objUrl.split("/");
-                    survey.setId(split[split.length - 1]);
-                    surveys.add(survey);
-                }
-                totalSize = result.getInt("totalSize");
-                actiontarget.setText("Processing " + totalSize + " surveys...");
+                actiontarget.setText("Processing " + totalSize + " respondentSurveys...");
                 pi = new ProgressIndicator(0);
                 pi.setMinWidth(50);
                 pi.setMinHeight(50);
                 pi.setStyle(" -fx-progress-color: green;");
                 if(infobox.getChildren().contains(pi)) infobox.getChildren().remove(pi);
                 infobox.getChildren().add(pi);
-                
-                class OneShotTask implements Runnable {
-                    List list;
-                    Callback c;
-                    OneShotTask(List list, Callback c) { this.list = list; this.c = c; }
-                    @Override
-                    public void run(){
-                        reshapeData(list);
-                        this.c.callback();
-                    }
-                }
-                Thread t = new Thread(new OneShotTask(surveys, new Callback(){
-                    @Override
-                    public void callback(){
-                        actiontarget.setText("");
-                    }
-                }));
-                t.start();
-                
+
+                new Thread(() -> {
+                    reshapeData(surveys, sf);
+                    actiontarget.setText("");
+                }).start();
+
             } catch (IOException ex) {
                 actiontarget.setText("Oooops!!!!");
                 Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
-    
-    private void reshapeData(List surveys){
+
+    private void reshapeData(List<RespondentSurvey> surveys, SalesforceConnector connector) {
         try {
             List<ResponseSet> responseSet = new ArrayList<>();
             db = new MySQLHelper("Insight_Organization");
-            String orgurlstring = ENVIRONMENT + "/" + selectedOrg.getUrl().substring(1);
-            URL orgurl = null;
-            try {
-                orgurl = new URL(orgurlstring);
-            } catch (MalformedURLException ex) {
-                Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            try {
-                HttpURLConnection connection = (HttpURLConnection) orgurl.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("Authorization", "Bearer " + ACCESS_TOKEN);
-                connection.setRequestProperty("Content-Type", "application/json");
-                BufferedReader streamReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-                StringBuilder responseStrBuilder = new StringBuilder();
+            String orgUrlString = "/" + selectedOrg.getUrl().substring(1);
 
-                String inputStr;
-                while ((inputStr = streamReader.readLine()) != null)
-                    responseStrBuilder.append(inputStr);
-
-                JSONObject result = new JSONObject(responseStrBuilder.toString());
+            try {
+                JSONObject result = connector.get(orgUrlString);
                 db.insertOrg(result);
             } catch (IOException ex) {
                 actiontarget.setText("Oooops!!!!");
                 Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
             }
+
             db.dropTable("Respondent");
-            for(int i = 0; i < surveys.size(); i++){
-                String surveyId = ((RespondentSurvey) surveys.get(i)).getId();
-                String urlString = ENVIRONMENT + "//services/data/v32.0/sobjects/Insight_Respondent_Survey__c/" + surveyId;
-                URL url = null;
+
+            for (int i = 0; i < surveys.size(); i++) {
+                String surveyId = surveys.get(i).getId();
+                String urlString = "/services/data/v32.0/sobjects/Insight_Respondent_Survey__c/" + surveyId;
                 try {
-                    url = new URL(urlString);
-                } catch (MalformedURLException ex) {
-                    Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                    JSONObject result = connector.get(urlString);
 
-                try {
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setRequestProperty("Authorization", "Bearer " + ACCESS_TOKEN);
-                    connection.setRequestProperty("Content-Type", "application/json");
-                    BufferedReader streamReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-                    StringBuilder responseStrBuilder = new StringBuilder();
+                    System.out.println("reshapeData[" + i + "]: " + result.toString());
 
-                    String inputStr;
-                    while ((inputStr = streamReader.readLine()) != null)
-                        responseStrBuilder.append(inputStr);
-
-                    System.out.println("reshapeData[" + i +"]: " + responseStrBuilder.toString());
-                    JSONObject result = new JSONObject(responseStrBuilder.toString());
                     db.insertRespondent(result);
                     Iterator<?> keys = result.keys();
-                    List<String> filter = Arrays.asList("Name", "LastModifiedById","IsDeleted","Id","CreatedById", "Insight_Organization__c", "Gender__c", "Age__c", "Years_with_Employer__c", "Years_in_Current_Position__c", "Native_Language__c", "Skill_in_English__c","Level_of_Education__c", "Scope__c", "Role__c","Department_or_Job_Function__c","Position__c");
+
+                    List<String> filter = Arrays.asList(
+                            "Name",
+                            "LastModifiedById",
+                            "IsDeleted","Id",
+                            "CreatedById",
+                            "Insight_Organization__c",
+                            "Gender__c",
+                            "Age__c",
+                            "Years_with_Employer__c",
+                            "Years_in_Current_Position__c",
+                            "Native_Language__c",
+                            "Skill_in_English__c",
+                            "Level_of_Education__c",
+                            "Scope__c",
+                            "Role__c",
+                            "Department_or_Job_Function__c",
+                            "Position__c"
+                    );
+
                     responseSet.clear();
-                    while(keys.hasNext()){
+
+                    while (keys.hasNext()) {
                         String key = (String)keys.next();
-                        if(result.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System") || filter.contains(key)) {}
-                        else {
-                            if(key.contains("SocD")){
+                        if (!(result.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System") || filter.contains(key))) {
+                            if (key.contains("SocD")) {
                                 boolean bool = (result.get(key).equals("1") || result.get(key).equals("true") || result.get(key).equals("True") || result.get(key).equals("TRUE"));
-                                responseSet.add(new ResponseSet(key,String.valueOf(bool),surveyId));
-                            }
-                            else{
-                                responseSet.add(new ResponseSet(key,result.get(key).toString(),surveyId));
+                                responseSet.add(new ResponseSet(key, String.valueOf(bool), surveyId));
+                            } else {
+                                responseSet.add(new ResponseSet(key, result.get(key).toString(), surveyId));
                             }
                         }
                     }
+
                     insertResponseSet(responseSet);
                     completedSurveys += 1;
                     pi.setProgress(completedSurveys / (double) totalSize);
@@ -361,27 +325,28 @@ public class FXMLController implements Initializable {
             Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     private void insertResponseSet(List<ResponseSet> data){
-        try {            
+        try {
             db.insertAll(data);
         } catch (SQLException | ClassNotFoundException ex) {
             Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
-    private void initSalesforce(){
-        ENVIRONMENT = sf_prefs.get("environment","https://salesforce.com");
-        CLIENT_ID =sf_prefs.get("id", "");
+
+    private void initSalesforce() {
+        String environment = sf_prefs.get("environment","https://salesforce.com");
+        this.sf = new SalesforceConnector(environment);
+        CLIENT_ID = sf_prefs.get("id", "");
         CLIENT_SECRET = sf_prefs.get("secret", "");
     }
-    
+
     @FXML
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         initSalesforce();
         if(!url.getPath().contains("Login")) return;
-        if(prefs.getBoolean("REMEMBER_ME", false)){            
+        if(prefs.getBoolean("REMEMBER_ME", false)){
             String username = prefs.get(PREF_NAME, "");
             String password = prefs.get("pass", username);
 
@@ -389,5 +354,5 @@ public class FXMLController implements Initializable {
             passwordField.setText(password);
             rememberMe.setSelected(true);
         }
-    }    
+    }
 }
