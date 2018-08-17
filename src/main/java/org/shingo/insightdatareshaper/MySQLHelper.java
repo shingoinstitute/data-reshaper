@@ -127,20 +127,18 @@ public class MySQLHelper {
         try {
             StringBuilder str = new StringBuilder();
             StringBuilder val = new StringBuilder();            
-            List<String> filter = Arrays.asList("Id","Insight_Organization__c", "Gender__c", "Age__c", "Years_with_Employer__c", "Years_in_Current_Position__c", "Native_Language__c", "Skill_in_English__c","Level_of_Education__c", "Scope__c", "Role__c","Department_or_Job_Function__c","Position__c");
             Iterator<?> keys = org.keys();
             while(keys.hasNext()){
                 String key = (String)keys.next();
                 if(org.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System")) {}
                 else {
-                    if(filter.contains(key)){
-                        str.append(key);
-                        str.append(", ");
-                        val.append("'").append(org.get(key).toString().replace("'", "''")).append("', ");
-                    }
+                    str.append(key);
+                    str.append(", ");
+                    val.append("'").append(org.get(key).toString().replace("'", "''")).append("', ");
                 }
             }
             String columns = str.toString();
+            // strip last comma and space
             columns = columns.substring(0, columns.length() - 2);
             String values = val.toString();
             values = values.substring(0, values.length() - 2);
@@ -154,9 +152,11 @@ public class MySQLHelper {
             String[] cols = columns.split(", ");
             str.append("CREATE TABLE IF NOT EXISTS Respondent (_id MEDIUMINT NOT NULL AUTO_INCREMENT, ");
             for (String col : cols) {
-                if (filter.contains(col)) {
-                    str.append(col).append(" VARCHAR(767), ");
-                }            
+                if (col.equals("Id")) {
+                    str.append(col).append(" VARCHAR(727), ");
+                } else {
+                    str.append(col).append(" MEDIUMTEXT, ");
+                }
             }
             str.append("PRIMARY KEY (_id), UNIQUE (Id));");
             System.out.println("CREATE TABLE STMT: " + str.toString());
