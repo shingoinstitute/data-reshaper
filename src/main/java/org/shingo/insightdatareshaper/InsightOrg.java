@@ -12,8 +12,8 @@ package org.shingo.insightdatareshaper;
 public class InsightOrg {
     private String name;
     private String id;
-    private String url;
-    
+    private String sobject = "Insight_Application__c";
+
     public InsightOrg(){
         
     }
@@ -29,25 +29,20 @@ public class InsightOrg {
     public void setId(String id){
         this.id = id;
     }
-    
+
     public String getId(){
         return this.id;
     }
-    
-    public void setUrl(String url){
-        this.url = url;
-    }
-    
-    public String getUrl(){
-        return this.url;
-    }
-    
+
+    public void setSObject(String sobject) { this.sobject = sobject; }
+    public String getSObject() { return this.sobject; }
+
     @Override
     public String toString(){
         return this.name;
     }
     
     public String toDebugString(){
-        return "Name: " + this.name + "\nID: " + this.id + "\nURL: " + this.url + "\n";
+        return "Name: " + this.name + "\nID: " + this.id + "\nsObject: " + this.sobject + "\n";
     }
 }

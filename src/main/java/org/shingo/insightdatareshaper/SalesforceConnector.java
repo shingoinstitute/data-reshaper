@@ -6,6 +6,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 public class SalesforceConnector {
@@ -22,6 +23,12 @@ public class SalesforceConnector {
 
     public void setAccessToken(String token) {
         this.accessToken = token;
+    }
+
+    private String buildSOQLQuery(String sobject, String[] fields, String clause) throws UnsupportedEncodingException {
+        String query = "SELECT " + String.join(", ", fields) + " FROM " + sobject +
+                (clause != null ? " WHERE " + clause : "");
+        return "/services/data/v32.0/query?q=" + URLEncoder.encode(query, "UTF-8");
     }
 
     private JSONObject readStreamAsJSON(InputStream stream) throws IOException {
@@ -50,7 +57,7 @@ public class SalesforceConnector {
         return connection;
     }
 
-    public JSONObject post(String urlString, JSONObject data) throws IOException {
+    private JSONObject post(String urlString, JSONObject data) throws IOException {
         HttpURLConnection connection = getConnection(urlString, "POST");
         connection.setRequestProperty("Accept", "application/json");
 
@@ -69,11 +76,21 @@ public class SalesforceConnector {
         return this.readStreamAsJSON(connection.getInputStream());
     }
 
-    public JSONObject get(String urlString) throws IOException {
+    private JSONObject get(String urlString) throws IOException {
         HttpURLConnection connection = getConnection(urlString, "GET");
         connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
         this.setAuthorization(connection);
         return this.readStreamAsJSON(connection.getInputStream());
+    }
+
+    public JSONObject retrieve(String sobject, String id) throws IOException {
+        String urlString = "/services/data/v32.0/sobjects/" + sobject + (id != null ? "/" + id : "");
+        return this.get(urlString);
+    }
+
+    public JSONObject query(String sobject, String[] fields, String clause) throws IOException {
+        String urlString = buildSOQLQuery(sobject, fields, clause);
+        return this.get(urlString);
     }
 
     public String connect(String clientId,
