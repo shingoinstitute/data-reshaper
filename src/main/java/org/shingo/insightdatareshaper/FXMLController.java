@@ -1,13 +1,7 @@
 package org.shingo.insightdatareshaper;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,7 +11,7 @@ import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
-import javafx.beans.value.ObservableValue;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -32,7 +26,6 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.beans.value.ChangeListener;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.HBox;
@@ -89,19 +82,14 @@ public class FXMLController implements Initializable {
         return this.sf.connect(CLIENT_ID, CLIENT_SECRET, username, password);
     }
 
-    private String buildSOQLQuery(String sobject, String[] fields, String clause) throws UnsupportedEncodingException {
-        String query = "SELECT " + String.join(", ", fields) + " FROM " + sobject +
-                (clause != null ? " WHERE " + clause : "");
-        return "/services/data/v32.0/query?q=" + URLEncoder.encode(query, "UTF-8");
-    }
-
     private InsightOrg createInsightOrg(JSONObject jorg) {
         InsightOrg org = new InsightOrg();
         org.setName(jorg.getString("Name"));
         String objUrl = jorg.getJSONObject("attributes").getString("url");
-        org.setUrl(objUrl);
+        String type = jorg.getJSONObject("attributes").getString("type");
         String[] split = objUrl.split("/");
         org.setId(split[split.length - 1]);
+        org.setSObject(type);
 
         return org;
     }
@@ -109,15 +97,14 @@ public class FXMLController implements Initializable {
     private List<InsightOrg> getInsightOrgs() throws IOException {
         String[] fields = {
                 "Name",
-                "Status__c"
+                "Application_Status__c"
         };
-        String sobject = "Insight_Organization__c";
-        String clause = "Status__c='Survey Complete, Waiting Report'";
-        String urlString = buildSOQLQuery(sobject, fields, clause);
-        JSONObject result = sf.get(urlString);
+        String sobject = "Insight_Application__c";
+        String clause = "Application_Status__c='Survey Complete, Awaiting Report'";
+        JSONObject result = sf.query(sobject, fields, clause);
 
         JSONArray records = result.getJSONArray("records");
-        for(int i = 0; i < records.length(); i++){
+        for (int i = 0; i < records.length(); i++) {
             JSONObject jorg = records.getJSONObject(i);
             orgList.add(createInsightOrg(jorg));
         }
@@ -141,13 +128,12 @@ public class FXMLController implements Initializable {
                 "Name"
         };
         String sobject = "Insight_Respondent_Survey__c";
-        String clause = "Insight_Organization__c = '" + selectedOrg.getId() + "'";
-        String urlString = this.buildSOQLQuery(sobject, fields, clause);
-        JSONObject result = sf.get(urlString);
+        String clause = "Insight_Application__c = '" + selectedOrg.getId() + "'";
+        JSONObject result = sf.query(sobject, fields, clause);
 
         System.out.println("Reshape: " + result.toString());
         JSONArray records = result.getJSONArray("records");
-        for(int i = 0; i < records.length(); i++){
+        for (int i = 0; i < records.length(); i++) {
             JSONObject jorg = records.getJSONObject(i);
             respondentSurveys.add(createRespondentSurvey(jorg));
         }
@@ -188,6 +174,8 @@ public class FXMLController implements Initializable {
         } catch (IOException ex) {
             if(ex.getMessage().contains("response code: 400")){
                 actiontarget.setText("Bad username or password!");
+            } else {
+                actiontarget.setText("Error while fetching insight applications: " + ex.getMessage());
             }
             Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -238,16 +226,15 @@ public class FXMLController implements Initializable {
                 pi.setMinWidth(50);
                 pi.setMinHeight(50);
                 pi.setStyle(" -fx-progress-color: green;");
-                if(infobox.getChildren().contains(pi)) infobox.getChildren().remove(pi);
+                if (infobox.getChildren().contains(pi)) infobox.getChildren().remove(pi);
                 infobox.getChildren().add(pi);
 
                 new Thread(() -> {
                     reshapeData(surveys, sf);
-                    actiontarget.setText("");
                 }).start();
 
             } catch (IOException ex) {
-                actiontarget.setText("Oooops!!!!");
+                actiontarget.setText("Error while retrieving surveys: " + ex.getMessage());
                 Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -257,13 +244,12 @@ public class FXMLController implements Initializable {
         try {
             List<ResponseSet> responseSet = new ArrayList<>();
             db = new MySQLHelper("Insight_Organization");
-            String orgUrlString = "/" + selectedOrg.getUrl().substring(1);
 
             try {
-                JSONObject result = connector.get(orgUrlString);
+                JSONObject result = connector.retrieve(selectedOrg.getSObject(), selectedOrg.getId());
                 db.insertOrg(result);
             } catch (IOException ex) {
-                actiontarget.setText("Oooops!!!!");
+                actiontarget.setText("Error while reshaping data: " + ex.getMessage());
                 Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
             }
 
@@ -271,9 +257,9 @@ public class FXMLController implements Initializable {
 
             for (int i = 0; i < surveys.size(); i++) {
                 String surveyId = surveys.get(i).getId();
-                String urlString = "/services/data/v32.0/sobjects/Insight_Respondent_Survey__c/" + surveyId;
+                String sobject = "Insight_Respondent_Survey__c";
                 try {
-                    JSONObject result = connector.get(urlString);
+                    JSONObject result = connector.retrieve(sobject, surveyId);
 
                     System.out.println("reshapeData[" + i + "]: " + result.toString());
 
@@ -313,23 +299,18 @@ public class FXMLController implements Initializable {
                         }
                     }
 
-                    insertResponseSet(responseSet);
+                    db.insertAll(responseSet);
                     completedSurveys += 1;
                     pi.setProgress(completedSurveys / (double) totalSize);
+                    // clear any error message only if we successfully reach the end
+                    actiontarget.setText("");
                 } catch (IOException ex) {
-                    actiontarget.setText("Oooops!!!!");
+                    actiontarget.setText("Error while reshaping data: " + ex.getMessage());
                     Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-        } catch (SQLException | ClassNotFoundException ex) {
-            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    private void insertResponseSet(List<ResponseSet> data){
-        try {
-            db.insertAll(data);
-        } catch (SQLException | ClassNotFoundException ex) {
+        } catch (InstantiationException | IllegalAccessException | SQLException | ClassNotFoundException ex) {
+            actiontarget.setText("Error connecting to mysql database: " + ex.getMessage());
             Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
