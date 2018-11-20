@@ -242,7 +242,6 @@ public class FXMLController implements Initializable {
 
     private void reshapeData(List<RespondentSurvey> surveys, SalesforceConnector connector) {
         try {
-            List<ResponseSet> responseSet = new ArrayList<>();
             db = new MySQLHelper("Insight_Organization");
 
             try {
@@ -253,53 +252,19 @@ public class FXMLController implements Initializable {
                 Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
             }
 
+            // drop the existing respondent data
             db.dropTable("Respondent");
 
-            for (int i = 0; i < surveys.size(); i++) {
-                String surveyId = surveys.get(i).getId();
+            // for every survey, retrieve the full data, and insert into database
+            for (RespondentSurvey survey : surveys) {
+                String surveyId = survey.getId();
                 String sobject = "Insight_Respondent_Survey__c";
                 try {
                     JSONObject result = connector.retrieve(sobject, surveyId);
 
-                    System.out.println("reshapeData[" + i + "]: " + result.toString());
+                    System.out.println("retrieve[" + result.getString("Id") + "]: " + result.toString());
 
                     db.insertRespondent(result);
-                    Iterator<?> keys = result.keys();
-
-                    List<String> filter = Arrays.asList(
-                            "Name",
-                            "LastModifiedById",
-                            "IsDeleted","Id",
-                            "CreatedById",
-                            "Insight_Organization__c",
-                            "Gender__c",
-                            "Age__c",
-                            "Years_with_Employer__c",
-                            "Years_in_Current_Position__c",
-                            "Native_Language__c",
-                            "Skill_in_English__c",
-                            "Level_of_Education__c",
-                            "Scope__c",
-                            "Role__c",
-                            "Department_or_Job_Function__c",
-                            "Position__c"
-                    );
-
-                    responseSet.clear();
-
-                    while (keys.hasNext()) {
-                        String key = (String)keys.next();
-                        if (!(result.get(key) instanceof JSONObject || key.contains("Date") || key.contains("System") || filter.contains(key))) {
-                            if (key.contains("SocD")) {
-                                boolean bool = (result.get(key).equals("1") || result.get(key).equals("true") || result.get(key).equals("True") || result.get(key).equals("TRUE"));
-                                responseSet.add(new ResponseSet(key, String.valueOf(bool), surveyId));
-                            } else {
-                                responseSet.add(new ResponseSet(key, result.get(key).toString(), surveyId));
-                            }
-                        }
-                    }
-
-                    db.insertAll(responseSet);
                     completedSurveys += 1;
                     pi.setProgress(completedSurveys / (double) totalSize);
                     // clear any error message only if we successfully reach the end

@@ -58,66 +58,13 @@ public class MySQLHelper {
         conn.close();
     }
 
-    private void createTable() throws SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-        conn = getConnection(HOST, USERNAME, PASSWORD, dbname);
-        System.out.println("Connected to database successfully!");
-        conn.setAutoCommit(false);
-        Statement stmt = conn.createStatement();
-        stmt.executeUpdate("drop table if exists Response_Set");
-        conn.commit();
-        String sql = "CREATE TABLE Response_Set " +
-                "(id MEDIUMINT NOT NULL AUTO_INCREMENT, " +
-                "Question TEXT NOT NULL, " +
-                "Response TEXT NOT NULL, " +
-                "SurveyId TEXT NOT NULL, " +
-                "PRIMARY KEY (id));";
-        stmt.execute(sql);
-        stmt.close();
-        conn.commit();
-        conn.setAutoCommit(true);
-        conn.close();
-    }
-
-    
     public MySQLHelper(String dbname) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         getCredentialsFromSettings();
         this.dbname = dbname;
         Class.forName("com.mysql.jdbc.Driver").newInstance();
-        conn = DriverManager.getConnection("jdbc:mysql://" + HOST + "/", USERNAME, PASSWORD);
-        conn.setAutoCommit(false);
-        Statement stmt = conn.createStatement();
-        stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbname);
-        stmt.close();
-        conn.commit();
-        conn.setAutoCommit(true);
-        conn.close();
         createDatabase(dbname);
-        createTable();
     }
 
-    public void insertAll(List<ResponseSet> list) throws SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-        conn = getConnection(HOST, USERNAME, PASSWORD, dbname);
-        conn.setAutoCommit(false);
-        Statement stmt = conn.createStatement();
-
-        List<String> values = list.stream().map(v -> {
-            String question = StringEscapeUtils.escapeSql(v.getQuestion());
-            String response = StringEscapeUtils.escapeSql(v.getReponse());
-
-            return "('" + question + "','" + response + "','" + v.getSurveyId() + "')";
-        }).collect(Collectors.toList());
-
-        String sql = "INSERT INTO Response_Set (Question, Response, SurveyId) " +
-            "VALUES " + String.join(", ", values) + ";";
-
-        stmt.execute(sql);
-
-        stmt.close();
-        conn.commit();
-        conn.setAutoCommit(true);
-        conn.close();
-    }
-    
     public void dropTable(String name) throws SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         conn = getConnection(HOST, USERNAME, PASSWORD, dbname);
         conn.setAutoCommit(false);
@@ -134,7 +81,7 @@ public class MySQLHelper {
     public void insertRespondent(JSONObject org) throws SQLException, ClassNotFoundException {
         try {
             StringBuilder str = new StringBuilder();
-            StringBuilder val = new StringBuilder();            
+            StringBuilder val = new StringBuilder();
             Iterator<?> keys = org.keys();
             while(keys.hasNext()){
                 String key = (String)keys.next();
